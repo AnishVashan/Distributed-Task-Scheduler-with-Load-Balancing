@@ -16,9 +16,9 @@ A task scheduler for a simulated cloud cluster, written in C, with a live browse
 ## Project structure
 
 ```
-backend/backend.c        Scheduler simulation and HTTP/JSON server
-frontend/frontend.html   Browser UI (cloud diagram, parameters, node table, log)
-cli/scheduler.c          Standalone command-line version
+backend.c        Scheduler simulation and HTTP/JSON server
+frontend.html   Browser UI (cloud diagram, parameters, node table, log)
+scheduler.c          Standalone command-line version
 ```
 
 ## Requirements
@@ -30,31 +30,13 @@ cli/scheduler.c          Standalone command-line version
 ## Quick start
 
 ```
-make
-make run
+gcc -O2 -pthread -o backend backend.c
+./backend
 ```
 
 Then open http://localhost:8080.
 
 Press Start to begin. Use the controls to change the strategy, node count, task size, arrival rate, network latency and simulation speed. Click a node (or use its Fail button) to simulate a failure, and Restore to bring it back.
-
-To build without `make`:
-
-```
-gcc -O2 -pthread -o backend backend/backend.c
-./backend
-```
-
-Run the backend from the repository root, or pass the frontend path as an argument: `./backend path/to/frontend.html`.
-
-## Command-line version
-
-```
-make cli
-./build/scheduler -s weighted -n 4 -t 30 -f
-```
-
-Options: `-s rr|least|weighted`, `-n` nodes (up to 16), `-t` tasks, `-f` inject a node failure mid-run.
 
 ## How it works
 
@@ -65,7 +47,6 @@ Options: `-s rr|least|weighted`, `-n` nodes (up to 16), `-t` tasks, `-f` inject 
 5. When a node fails, it finishes the task it is running, and every queued task is sent again through the load balancer.
 
 The frontend polls `GET /api/state` about 16 times a second and renders the result.
-- Saving run results to a file for comparing strategies
 
 ## License
 
