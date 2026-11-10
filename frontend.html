@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cloud task scheduler - frontend</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Figtree:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#e9eef4;--surface:#fff;--ink:#14233a;--muted:#5b6b80;--line:#d3dce7;--accent:#0f8b8d;--accent-ink:#fff;--bad:#c93a55;
+--p1:#9fd3d4;--p2:#5cb8bb;--p3:#2f9a9e;--p4:#6a6fc4;--p5:#4a3fa0;--track:#e3eaf2;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1827;--surface:#162539;--ink:#e6edf5;--muted:#93a3b8;--line:#263a52;--accent:#3cc4c6;--accent-ink:#0e1827;--bad:#ef6f87;
+--p1:#2c6d70;--p2:#2f8f93;--p3:#3cc4c6;--p4:#8d92e6;--p5:#b9aaff;--track:#1f3149;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e1827;--surface:#162539;--ink:#e6edf5;--muted:#93a3b8;--line:#263a52;--accent:#3cc4c6;--accent-ink:#0e1827;--bad:#ef6f87;
+--p1:#2c6d70;--p2:#2f8f93;--p3:#3cc4c6;--p4:#8d92e6;--p5:#b9aaff;--track:#1f3149;color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.5 Figtree,system-ui,-apple-system,"Segoe UI",sans-serif}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
+.wrap{max-width:1080px;margin:0 auto;padding:24px 16px 40px}
+h1{font:700 clamp(26px,4vw,38px)/1.1 "Bricolage Grotesque",Figtree,sans-serif;margin:0 0 6px;letter-spacing:-.01em}
+.sub{color:var(--muted);max-width:62ch;margin:0 0 20px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.controls{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:end;margin-bottom:16px}
+label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);font-weight:500}
+select,input[type=range]{font:inherit;color:var(--ink)}
+select{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-width:150px}
+input[type=range]{accent-color:var(--accent);width:150px}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-left:auto}
+button{font:600 14px Figtree,sans-serif;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 14px;cursor:pointer}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.stat b{display:block;font:700 26px/1.1 "Bricolage Grotesque",Figtree,sans-serif}
+.stat span{color:var(--muted);font-size:13px}
+.lanes{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-bottom:16px}
+.node{display:flex;flex-direction:column;gap:10px;min-height:220px}
+.node.dead{border-style:dashed;border-color:var(--bad)}
+.nh{display:flex;justify-content:space-between;align-items:baseline}
+.nh strong{font:700 17px "Bricolage Grotesque",Figtree,sans-serif}
+.tag{font-size:12px;color:var(--muted)}
+.tag.bad{color:var(--bad);font-weight:600}
+.run{background:var(--bg);border-radius:8px;padding:8px 10px;font-size:13px;min-height:50px}
+.bar{height:6px;border-radius:3px;background:var(--track);overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:var(--accent)}
+.q{display:flex;flex-wrap:wrap;gap:4px;align-content:flex-start;flex:1}
+.chip{min-width:30px;padding:2px 6px;border-radius:6px;font-size:12px;font-weight:600;text-align:center;color:#fff}
+.p1,.p2{color:#0e1827}
+.p1{background:var(--p1)}.p2{background:var(--p2)}.p3{background:var(--p3);color:#0e1827}.p4{background:var(--p4)}.p5{background:var(--p5)}
+:root[data-theme="dark"] .p4,:root[data-theme="dark"] .p5{color:#0e1827}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .p4,:root:not([data-theme="light"]) .p5{color:#0e1827}}
+.nf{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted)}
+.nf button{padding:4px 10px;font-size:12px}
+.legend{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--muted);margin-bottom:10px;flex-wrap:wrap}
+.log{margin:0;padding:0;list-style:none;font-size:13px;color:var(--muted)}
+.log li{padding:3px 0;border-bottom:1px solid var(--line)}
+.log li:last-child{border:0}
+.log .f{color:var(--bad)}
+.theme{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));right:16px;padding:5px 10px;font-size:12px}
+
+.cols{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;margin-bottom:16px}
+@media(min-width:900px){.cols{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}}
+svg.cloud{width:100%;height:auto;display:block}
+svg text{font-family:Figtree,system-ui,sans-serif;fill:var(--ink)}
+svg .m{fill:var(--muted)}
+.kv{display:grid;grid-template-columns:1fr auto;gap:5px 12px;margin:0;font-size:14px}
+.kv dt{color:var(--muted)}.kv dd{margin:0;font-weight:600;text-align:right}
+.panel h2{font:700 16px "Bricolage Grotesque",Figtree,sans-serif;margin:0 0 10px}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px;white-space:nowrap}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--muted);font-weight:500}
+td button{padding:3px 8px;font-size:12px}
+.bad{color:var(--bad);font-weight:600}
+.conn{display:inline-block;font-size:13px;font-weight:600;padding:3px 10px;border-radius:999px;border:1px solid var(--line);margin-bottom:14px}.conn.on{color:var(--accent)}.conn.off{color:var(--bad);border-color:var(--bad)}
+</style>
+</head>
+<body>
+<button class="theme" id="theme" aria-label="Toggle dark mode">Theme</button>
+<div class="wrap">
+<h1>Task allocation in a cloud cluster</h1>
+<div class="conn off" id="conn">Backend not connected</div>
+<p class="sub">Clients send tasks to a load balancer, which dispatches each one to a cloud node. Packets travel farther to distant regions, faster nodes finish sooner, and you can fail a node to watch its queue move. This page only draws what the C backend reports; every number comes from the server.</p>
+
+<div class="panel controls">
+ <label>Strategy
+  <select id="strat"><option value="rr">Round-robin</option><option value="least">Least-loaded</option><option value="weighted" selected>Weighted by node speed</option></select></label>
+ <label>Nodes
+  <select id="nn"><option>3</option><option selected>4</option><option>5</option><option>6</option></select></label>
+ <label>Task size
+  <select id="size"><option value="0.5">Small</option><option value="1" selected>Medium</option><option value="2">Large</option></select></label>
+ <label>Arrival rate: <span id="rv">1.5</span> tasks/s
+  <input type="range" id="rate" min="0.2" max="5" step="0.1" value="1.5"></label>
+ <label>Network latency: <span id="lv">400</span> ms
+  <input type="range" id="lat" min="100" max="1500" step="50" value="400"></label>
+ <label>Sim speed: <span id="sv">2</span>×
+  <input type="range" id="spd" min="1" max="6" step="1" value="2"></label>
+ <div class="btns">
+  <button class="primary" id="go">Start</button>
+  <button id="burst">Add 10 tasks</button>
+  <button id="failb">Fail a node</button>
+  <button id="reset">Reset</button>
+ </div>
+</div>
+
+<div class="legend">Priority:
+ <span class="chip p1">1</span><span class="chip p2">2</span><span class="chip p3">3</span><span class="chip p4">4</span><span class="chip p5">5</span>
+ <span>Red ring: task re-sent after a node failure. Click a node to fail or restore it.</span></div>
+
+<div class="cols">
+ <div class="panel"><svg class="cloud" id="svg" role="img" aria-label="Diagram of tasks flowing from clients through a load balancer to cloud nodes"></svg></div>
+ <div class="panel"><h2>Current parameters</h2><dl class="kv" id="kv"></dl></div>
+</div>
+
+<div class="panel" style="margin-bottom:16px"><h2>Nodes</h2><div class="tw"><table id="tbl"></table></div></div>
+<div class="panel"><h2>Event log</h2><ul class="log" id="log"></ul></div>
+</div>
+
+<script>
+/* Frontend: draws the state reported by the C backend (backend.c). */
+const API=location.protocol==='file:'?'http://localhost:8080':'';
+const $=id=>document.getElementById(id);
+let st=null,busy=false,synced=false;
+
+async function call(path,params){
+  const q=params?'?'+new URLSearchParams(params):'';
+  try{
+    const r=await fetch(API+path+q,{method:path==='/api/state'?'GET':'POST'});
+    st=await r.json();
+    online(true);
+    if(!synced)syncControls();
+    render();
+  }catch(e){online(false)}
+}
+function online(ok){
+  const c=$('conn');
+  c.className='conn '+(ok?'on':'off');
+  c.textContent=ok?'Backend connected':'Backend not reachable. Start it with ./backend and keep it running.';
+}
+function syncControls(){
+  synced=true;
+  $('strat').value=st.strategy;$('nn').value=st.nodes_total;$('size').value=String(st.size);
+  $('rate').value=st.rate;$('lat').value=st.latency;$('spd').value=st.speed;
+  $('rv').textContent=(+st.rate).toFixed(1);$('lv').textContent=st.latency;$('sv').textContent=st.speed;
+}
+
+const NX=560,NW=340,NH=70,GAP=10;
+function render(){
+  if(!st)return;
+  const N=st.nodes,H=N.length*(NH+GAP)+GAP,cy=H/2;
+  const ny=i=>GAP+i*(NH+GAP);
+  let s='';
+  N.forEach((n,i)=>{
+    s+='<line x1="410" y1="'+cy+'" x2="'+NX+'" y2="'+(ny(i)+NH/2)+'" stroke="'+(n.alive?'var(--line)':'var(--bad)')+'" stroke-width="2"'+(n.alive?'':' stroke-dasharray="5 4"')+'/>';
+  });
+  s+='<line x1="140" y1="'+cy+'" x2="300" y2="'+cy+'" stroke="var(--line)" stroke-width="2"/>';
+  s+='<g fill="var(--track)" stroke="var(--line)"><circle cx="60" cy="'+(cy+6)+'" r="26"/><circle cx="92" cy="'+(cy-6)+'" r="30"/><circle cx="118" cy="'+(cy+8)+'" r="22"/></g>';
+  s+='<text x="80" y="'+(cy+4)+'" text-anchor="middle" font-size="14" font-weight="700">Clients</text>';
+  s+='<text x="80" y="'+(cy+52)+'" text-anchor="middle" font-size="12" class="m">'+st.rate.toFixed(1)+' tasks/s</text>';
+  s+='<rect x="300" y="'+(cy-62)+'" width="110" height="124" rx="12" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"/>';
+  s+='<text x="355" y="'+(cy-34)+'" text-anchor="middle" font-size="14" font-weight="700">Load balancer</text>';
+  s+='<text x="355" y="'+(cy-14)+'" text-anchor="middle" font-size="12" class="m">'+st.strategy_name+'</text>';
+  s+='<text x="355" y="'+(cy+8)+'" text-anchor="middle" font-size="12" class="m">sent: '+st.gen+'</text>';
+  s+='<text x="355" y="'+(cy+26)+'" text-anchor="middle" font-size="12" class="m">in flight: '+st.flights.length+'</text>';
+  s+='<text x="355" y="'+(cy+44)+'" text-anchor="middle" font-size="12" class="m">'+(st.strategy==='rr'?'next: node '+st.rr_next:'picks lowest load')+'</text>';
+  N.forEach((n,i)=>{
+    const y=ny(i);
+    s+='<g data-i="'+i+'" data-a="'+(n.alive?'f':'r')+'" style="cursor:pointer"><title>'+(n.alive?'Click to fail node '+i:'Click to bring node '+i+' back')+'</title>';
+    s+='<rect x="'+NX+'" y="'+y+'" width="'+NW+'" height="'+NH+'" rx="10" fill="var(--surface)" stroke="'+(n.alive?'var(--line)':'var(--bad)')+'" stroke-width="2"'+(n.alive?'':' stroke-dasharray="6 4"')+'/>';
+    s+='<text x="'+(NX+12)+'" y="'+(y+20)+'" font-size="14" font-weight="700">vm-'+i+'</text>';
+    s+='<text x="'+(NX+60)+'" y="'+(y+20)+'" font-size="12" class="m">'+n.region+' · '+n.speed.toFixed(1)+'× compute</text>';
+    s+='<text x="'+(NX+NW-12)+'" y="'+(y+20)+'" text-anchor="end" font-size="12" font-weight="600" fill="'+(n.alive?'var(--accent)':'var(--bad)')+'">'+(!n.alive?'failed':n.running?'running':'idle')+' · '+Math.round(n.util)+'%</text>';
+    if(n.running){
+      s+='<text x="'+(NX+12)+'" y="'+(y+42)+'" font-size="12">Task '+n.running.id+' (P'+n.running.p+')</text>';
+      s+='<rect x="'+(NX+110)+'" y="'+(y+34)+'" width="200" height="8" rx="4" fill="var(--track)"/><rect x="'+(NX+110)+'" y="'+(y+34)+'" width="'+(200*n.running.progress).toFixed(1)+'" height="8" rx="4" fill="var(--accent)"/>';
+    } else s+='<text x="'+(NX+12)+'" y="'+(y+42)+'" font-size="12" class="m">'+(n.alive?'No task running':'Offline')+'</text>';
+    n.queued.forEach((t,k)=>{
+      s+='<rect x="'+(NX+12+k*23)+'" y="'+(y+50)+'" width="18" height="14" rx="3" fill="var(--p'+t.p+')"><title>Task '+t.id+', priority '+t.p+'</title></rect>';
+    });
+    if(n.qn>12)s+='<text x="'+(NX+12+12*23)+'" y="'+(y+61)+'" font-size="12" class="m">+'+(n.qn-12)+'</text>';
+    if(!n.qn)s+='<text x="'+(NX+12)+'" y="'+(y+61)+'" font-size="11" class="m">queue empty</text>';
+    s+='</g>';
+  });
+  st.flights.forEach(f=>{
+    const ty=ny(f.node)+NH/2,p=f.progress;
+    let x,y;
+    if(!f.retry&&p<.3){x=140+160*(p/.3);y=cy}
+    else{const q=f.retry?p:(p-.3)/.7;x=410+(NX-410)*q;y=cy+(ty-cy)*q}
+    s+='<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="7" fill="var(--p'+f.p+')" stroke="'+(f.retry?'var(--bad)':'var(--surface)')+'" stroke-width="2.5"/>';
+  });
+  $('svg').setAttribute('viewBox','0 0 920 '+H);
+  $('svg').innerHTML=s;
+
+  const loads=N.filter(n=>n.alive).map(n=>n.load);
+  const imb=loads.length?Math.max(...loads)-Math.min(...loads):0;
+  const alive=N.filter(n=>n.alive).length;
+  const kv=[
+    ['Strategy',st.strategy_name],['Nodes alive',alive+' of '+N.length],
+    ['Arrival rate',st.rate.toFixed(1)+' tasks/s'],['Task size',{0.5:'Small',1:'Medium',2:'Large'}[st.size]],
+    ['Base network latency',st.latency+' ms'],['Simulation speed',st.speed+'×'],
+    ['Simulated time',(st.t/1000).toFixed(1)+' s'],['Tasks generated',st.gen],
+    ['In flight',st.flights.length],['Waiting in queues',N.reduce((a,n)=>a+n.qn,0)],
+    ['Running now',N.filter(n=>n.running).length],['Completed',st.done],
+    ['Re-sent after failure',st.retried],['Dropped',st.dropped],
+    ['Average wait',(st.started?st.wait_sum/st.started/1000:0).toFixed(2)+' s'],
+    ['Throughput',(st.t?st.done/(st.t/1000):0).toFixed(2)+' tasks/s'],
+    ['Load imbalance',imb.toFixed(2)],
+    ['Next round-robin target',st.strategy==='rr'?'node '+st.rr_next:'not used']
+  ];
+  $('kv').innerHTML=kv.map(r=>'<dt>'+r[0]+'</dt><dd>'+r[1]+'</dd>').join('');
+  $('tbl').innerHTML='<tr><th>Node</th><th>Region</th><th>Speed</th><th>Latency</th><th>State</th><th>Running</th><th>Queued</th><th>Load</th><th>Busy</th><th>Received</th><th>Done</th><th></th></tr>'
+   +N.map((n,i)=>'<tr><td>vm-'+i+'</td><td>'+n.region+'</td><td>'+n.speed.toFixed(1)+'×</td><td>'+Math.round(st.latency*n.lat_factor)+' ms</td>'
+    +'<td class="'+(n.alive?'':'bad')+'">'+(n.alive?'alive':'failed')+'</td><td>'+(n.running?'Task '+n.running.id:'–')+'</td><td>'+n.qn+'</td>'
+    +'<td>'+n.load.toFixed(2)+'</td><td>'+Math.round(n.util)+'%</td><td>'+n.got+'</td><td>'+n.done+'</td>'
+    +'<td><button data-i="'+i+'" data-a="'+(n.alive?'f':'r')+'">'+(n.alive?'Fail':'Restore')+'</button></td></tr>').join('');
+  $('log').innerHTML=st.log.map(l=>'<li'+(l.bad?' class="f"':'')+'>'+l.m+'</li>').join('');
+  $('go').textContent=st.running?'Pause':'Start';
+}
+
+setInterval(()=>{if(busy)return;busy=true;call('/api/state').finally(()=>busy=false)},60);
+
+$('go').onclick=()=>call(st&&st.running?'/api/pause':'/api/start');
+$('burst').onclick=()=>call('/api/burst');
+$('failb').onclick=()=>call('/api/fail');
+$('reset').onclick=()=>call('/api/reset');
+$('nn').onchange=e=>call('/api/config',{nodes:e.target.value});
+$('strat').onchange=e=>call('/api/config',{strategy:e.target.value});
+$('size').onchange=e=>call('/api/config',{size:e.target.value});
+$('rate').oninput=e=>{$('rv').textContent=(+e.target.value).toFixed(1);call('/api/config',{rate:e.target.value})};
+$('lat').oninput=e=>{$('lv').textContent=e.target.value;call('/api/config',{latency:e.target.value})};
+$('spd').oninput=e=>{$('sv').textContent=e.target.value;call('/api/config',{speed:e.target.value})};
+const toggle=e=>{
+  const b=e.target.closest('[data-i]');if(!b)return;
+  call(b.dataset.a==='f'?'/api/fail':'/api/recover',{node:b.dataset.i});
+};
+$('svg').onclick=toggle;$('tbl').onclick=toggle;
+$('theme').onclick=()=>{
+  const r=document.documentElement,dark=matchMedia('(prefers-color-scheme: dark)').matches;
+  const cur=r.dataset.theme||(dark?'dark':'light');
+  r.dataset.theme=cur==='dark'?'light':'dark';
+};
+</script>
+</body>
+</html>
